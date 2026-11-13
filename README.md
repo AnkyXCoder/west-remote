@@ -1,11 +1,11 @@
 # zephyr-remote-flash — `west remote`
 
 Build Zephyr applications on a remote server and flash a devkit attached to
-your laptop. Primary interface is the **`west remote`** extension command;
+your local machine. Primary interface is the **`west remote`** extension command;
 `zflash` remains as a standalone/compatibility entry point.
 
 ```
-laptop (devkit)                        build server
+local machine (devkit)                        server machine
 ──────────────                         ─────────────
 west remote build gpio_test  ──SSH──>  west build ... → publish bundle
 west remote flash gpio_test  <──rsync/HTTP──  verified, checksummed bundle
@@ -15,11 +15,11 @@ west remote flash gpio_test  <──rsync/HTTP──  verified, checksummed bund
 ## Install
 
 ```bash
-pip install zephyr-remote-flash        # laptop
+pip install zephyr-remote-flash        # local machine
 pip install -e '.[uart]'               # + serial monitor support
 ```
 
-On the **build server**, install it too if you want `west remote build` to
+On the **server machine**, install it too if you want `west remote build` to
 auto-publish bundles (`pip install zephyr-remote-flash`); publishing also
 works manually via `west remote publish`.
 
@@ -57,16 +57,16 @@ or `latest` (default). Unverified bundles require `--force-unverified`.
 
 | Command | Where | Purpose |
 |---|---|---|
-| `setup` | laptop | interactive config wizard |
-| `connect` / `disconnect` / `status` | laptop | reusable OpenSSH session |
-| `builds` | laptop | list published bundles |
-| `fetch <sel>` | laptop | download verified bundle to cache |
-| `flash <sel> [--local f] [--monitor] [-n]` | laptop | fetch + program the devkit |
-| `monitor [--port --baud]` | laptop | serial console |
-| `doctor` | laptop | tools, config, session check |
-| `build <app> [--flash] [--monitor]` | laptop | remote `west build` + publish |
-| `publish --build-dir D --name N` | server | snapshot build dir as bundle |
-| `serve <roots> [--port]` | server | bundle HTTP service (loopback default) |
+| `setup` | local machine | interactive config wizard |
+| `connect` / `disconnect` / `status` | local machine | reusable OpenSSH session |
+| `builds` | local machine | list published bundles |
+| `fetch <sel>` | local machine | download verified bundle to cache |
+| `flash <sel> [--local f] [--monitor] [-n]` | local machine | fetch + program the devkit |
+| `monitor [--port --baud]` | local machine | serial console |
+| `doctor` | local machine | tools, config, session check |
+| `build <app> [--flash] [--monitor]` | local machine | remote `west build` + publish |
+| `publish --build-dir D --name N` | server machine | snapshot build dir as bundle |
+| `serve <roots> [--port]` | server machine | bundle HTTP service (loopback default) |
 | `boards`, `init`, `list`, `pull`, `console` | both | legacy/compat commands |
 
 ## SSH sessions (no repeated passwords)
@@ -123,7 +123,7 @@ hashes, and only then promote to `~/.cache/zflash/bundles/` — corrupted or
 truncated transfers can never reach the flasher.
 
 The HTTP service (`west remote serve <publish_root>`) binds **loopback by
-default**; reach it from the laptop via SSH forwarding or run it only on
+default**; reach it from the local machine via SSH forwarding or run it only on
 the VPN. It serves declared bundle files only — no arbitrary workspace
 paths.
 

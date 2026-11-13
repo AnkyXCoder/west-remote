@@ -1,7 +1,7 @@
 # Copyright (c) 2025 eInfochips
 # SPDX-License-Identifier: Apache-2.0
 
-"""HTTP backend: talks to `zflash serve` running on the build server."""
+"""HTTP backend: talks to `zflash serve` running on the server machine."""
 
 import json
 import urllib.parse

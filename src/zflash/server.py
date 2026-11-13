@@ -1,7 +1,7 @@
 # Copyright (c) 2025 eInfochips
 # SPDX-License-Identifier: Apache-2.0
 
-"""`zflash serve`: published-bundle service for the build server.
+"""`zflash serve`: published-bundle service for the server machine.
 
 Each served root is a publish root containing <build_id>/bundle.json + files.
 Endpoints:
@@ -31,7 +31,7 @@ td.time{color:#666;white-space:nowrap}</style>
 <h1>zflash published builds</h1><table>
 <tr><th>Build</th><th>Name</th><th>Board</th><th>Images</th><th>Published</th></tr>
 {rows}</table><p>{count} builds. Use <code>west remote builds</code> /
-<code>west remote flash</code> on your laptop.</p>
+<code>west remote flash</code> on your local machine.</p>
 """
 
 

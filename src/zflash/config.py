@@ -16,14 +16,14 @@ PROJECT_CONFIG = "zflash.yaml"
 
 @dataclass
 class ServerConfig:
-    """How to reach the build server."""
+    """How to reach the server machine."""
 
     transport: str = "ssh"  # ssh | http
-    host: str = ""  # e.g. "build@server.local" (SSH config aliases work)
+    host: str = ""  # e.g. "build@server-machine.local" (SSH config aliases work)
     ssh_options: List[str] = field(default_factory=list)
     # Remote directories scanned for unverified workspace builds (legacy mode).
     artifact_roots: List[str] = field(default_factory=lambda: ["zephyrproject"])
-    http_url: str = ""  # e.g. "http://server.local:8765" (zflash serve)
+    http_url: str = ""  # e.g. "http://server-machine.local:8765" (zflash serve)
     # SSH session behaviour.
     persist_minutes: int = 30
     # When true, commands require `west remote connect` first (BatchMode on).

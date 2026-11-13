@@ -44,7 +44,7 @@ class RemoteCommand(_Forwarder):
     def __init__(self):
         super().__init__(
             "remote",
-            "build on a remote server and flash a local devkit",
+            "build on a remote server machine and flash a local devkit",
             "west remote connect|status|disconnect|setup|builds|fetch|flash|"
             "monitor|doctor|build|publish|serve",
         )
@@ -54,6 +54,6 @@ class ZflashCommand(_Forwarder):
     def __init__(self):
         super().__init__(
             "zflash",
-            "fetch binaries from a build server and flash a local devkit",
+            "fetch binaries from a server machine and flash a local devkit",
             "Compatibility alias for 'west remote'.",
         )

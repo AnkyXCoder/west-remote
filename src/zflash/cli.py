@@ -150,7 +150,7 @@ def cmd_status(args):
 def cmd_setup(args):
     cfg_path = USER_CONFIG
     cfg_path.parent.mkdir(parents=True, exist_ok=True)
-    print("west remote setup — configuring your build server\n")
+    print("west remote setup — configuring your server machine\n")
 
     host = _ask("SSH host or alias (e.g. build@server or ~/.ssh/config alias)")
     if not host:
@@ -418,7 +418,7 @@ def shlex_quote(s: str) -> str:
 
 
 def cmd_publish(args):
-    """Runs on the build server: snapshot a build dir into a bundle."""
+    """Runs on the server machine: snapshot a build dir into a bundle."""
     from zflash.publish import publish_local
 
     build_dir = Path(args.build_dir).expanduser().resolve()
@@ -590,7 +590,7 @@ def cmd_doctor(args):
 def build_parser(prog: str = "zflash") -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog=prog,
-        description="Build on a remote server and flash a locally attached devkit.",
+        description="Build on a remote server machine and flash a locally attached devkit.",
     )
     p.add_argument("--version", action="version", version=f"{prog} {__version__}")
     sub = p.add_subparsers(dest="command", metavar="<command>")
@@ -659,7 +659,7 @@ def build_parser(prog: str = "zflash") -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_build)
 
     sp = sub.add_parser("publish", help="snapshot a build dir as a bundle "
-                                       "(run on the build server)")
+                                       "(run on the server machine)")
     sp.add_argument("--build-dir", required=True)
     sp.add_argument("--publish-root", default=".zflash/published")
     sp.add_argument("--name", required=True)
@@ -669,7 +669,7 @@ def build_parser(prog: str = "zflash") -> argparse.ArgumentParser:
                     help="mark success as unknown")
     sp.set_defaults(func=cmd_publish)
 
-    sp = sub.add_parser("serve", help="run the bundle service (build server)")
+    sp = sub.add_parser("serve", help="run the bundle service (server machine)")
     sp.add_argument("roots", nargs="+", help="publish roots to serve")
     sp.add_argument("--bind", default="127.0.0.1",
                     help="bind address (default loopback; use SSH forwarding)")

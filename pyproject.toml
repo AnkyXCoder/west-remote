@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zephyr-remote-flash"
 version = "0.1.0"
-description = "Fetch Zephyr binaries from a remote build server and flash a locally attached devkit"
+description = "Fetch Zephyr binaries from a remote server machine and flash a locally attached devkit"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [

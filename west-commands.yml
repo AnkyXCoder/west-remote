@@ -3,7 +3,7 @@ west-commands:
     commands:
       - name: remote
         class: RemoteCommand
-        help: build on a remote server and flash a local devkit
+        help: build on a remote server machine and flash a local devkit
       - name: zflash
         class: ZflashCommand
         help: compatibility alias for 'west remote'
