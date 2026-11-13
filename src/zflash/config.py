@@ -129,7 +129,7 @@ server:
 #   gpio_test:
 #     workspace: zephyrproject  # remote west workspace root
 #     source_dir: ra8p1_dual_core_app/board_bringup_tests/gpio_test
-#     build_dir: build
+#     build_dir: build          # relative to source_dir
 #     board: zcore_ra8p1_r7ka8p1kflcac_cm85
 #     extra_args: []
 
