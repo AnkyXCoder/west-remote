@@ -9,7 +9,7 @@ description = "Fetch Zephyr binaries from a remote build server and flash a loca
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "eInfochips", email = "ankit@example.com"}
+    {name = "eInfochips"}
 ]
 keywords = ["zephyr", "flashing", "jlink", "pyocd", "remote", "embedded"]
 classifiers = [
@@ -47,4 +47,8 @@ zflash = ["boards_builtin.yaml"]
 
 [tool.black]
 line-length = 100
-target-version = ['py38']
+target-version = ['py39']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

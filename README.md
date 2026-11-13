@@ -1,151 +1,147 @@
-# zflash — remote Zephyr artifact fetch & flash
+# zephyr-remote-flash — `west remote`
 
-`zflash` solves a common remote-development problem: **Zephyr builds happen on a
-powerful server, but the devkit is plugged into your laptop.** It pulls build
-artifacts from the server (over SSH/rsync or a small HTTP service) and flashes
-the locally attached probe — J-Link, pyOCD, or NXP `blhost`.
+Build Zephyr applications on a remote server and flash a devkit attached to
+your laptop. Primary interface is the **`west remote`** extension command;
+`zflash` remains as a standalone/compatibility entry point.
 
 ```
 laptop (devkit)                        build server
 ──────────────                         ─────────────
-zflash flash gpio_test  ── SSH/rsync ──>  ~/zephyrproject/**/build/zephyr/zephyr.hex
-  ├─ rsync artifact                    or  zflash serve ~/zephyrproject (HTTP)
+west remote build gpio_test  ──SSH──>  west build ... → publish bundle
+west remote flash gpio_test  <──rsync/HTTP──  verified, checksummed bundle
   └─ JLinkExe / pyocd / blhost  ->  devkit
 ```
 
 ## Install
 
 ```bash
-pip install zephyr-remote-flash        # from PyPI, once published
-pip install -e .                       # or from this source tree
-pip install -e '.[uart]'               # + serial console support
+pip install zephyr-remote-flash        # laptop
+pip install -e '.[uart]'               # + serial monitor support
 ```
+
+On the **build server**, install it too if you want `west remote build` to
+auto-publish bundles (`pip install zephyr-remote-flash`); publishing also
+works manually via `west remote publish`.
+
+## West registration
+
+This repo is a west extension project (`west-commands.yml` at the root).
+Add it to your workspace manifest:
+
+```yaml
+manifest:
+  projects:
+    - name: zephyr-remote-flash
+      url: <repo-url>
+      revision: <tag-or-commit>
+      west-commands: west-commands.yml
+```
+
+Then `west remote ...` works inside the workspace. `zflash ...` works
+anywhere the package is installed.
 
 ## Quick start
 
 ```bash
-zflash init                            # writes ~/.config/zflash/config.yaml
-# edit server.host and flash.board, then:
-zflash doctor                          # sanity-check tools & config
-zflash list                            # what can I flash?
-zflash flash gpio_test                 # pick, pull, flash — done
+west remote setup        # guided: SSH alias, board, serial port
+west remote connect      # authenticate once (password prompt OK)
+west remote builds       # list published bundles
+west remote flash gpio_test --monitor
+west remote disconnect
 ```
 
-No `name` argument? You get an interactive numbered menu. `--local file.hex`
-flashes a file without touching the server; `-n/--dry-run` prints the probe
-commands without executing.
-
-## Two ways to reach the server
-
-| Transport | Server side | Client config | Best for |
-|-----------|-------------|---------------|----------|
-| `ssh` (default) | nothing — just sshd + rsync | `server.host` | personal use, any SSH setup incl. bastions |
-| `http` | `zflash serve <roots>` | `server.http_url` | teammates without SSH accounts, browsing builds |
-
-Run the artifact service on the build server:
-
-```bash
-zflash serve ~/zephyrproject/ra8p1_dual_core_app --port 8765
-# browse http://server:8765/ or: zflash --url http://server:8765 list
-```
+No subcommand arguments? `flash`/`fetch` accept a build id, name substring,
+or `latest` (default). Unverified bundles require `--force-unverified`.
 
 ## Commands
 
-```
-zflash init [--force]          write example config
-zflash boards                  list board profiles
-zflash list [filter]           list remote artifacts (name, size, age)
-zflash pull [name]             download artifact (+ flashable siblings)
-zflash flash [name] [-l file] [-r runner] [-n]
-zflash serve <roots> [--port]  artifact service (run on the build server)
-zflash console [--port --baud] serial console after flashing
-zflash doctor                  check ssh/rsync/JLinkExe/pyocd/blhost & config
-```
+| Command | Where | Purpose |
+|---|---|---|
+| `setup` | laptop | interactive config wizard |
+| `connect` / `disconnect` / `status` | laptop | reusable OpenSSH session |
+| `builds` | laptop | list published bundles |
+| `fetch <sel>` | laptop | download verified bundle to cache |
+| `flash <sel> [--local f] [--monitor] [-n]` | laptop | fetch + program the devkit |
+| `monitor [--port --baud]` | laptop | serial console |
+| `doctor` | laptop | tools, config, session check |
+| `build <app> [--flash] [--monitor]` | laptop | remote `west build` + publish |
+| `publish --build-dir D --name N` | server | snapshot build dir as bundle |
+| `serve <roots> [--port]` | server | bundle HTTP service (loopback default) |
+| `boards`, `init`, `list`, `pull`, `console` | both | legacy/compat commands |
 
-Global flags: `--host`, `--url`, `-b/--board` override config per invocation.
-Env vars: `ZFLASH_HOST`, `ZFLASH_TRANSPORT`, `ZFLASH_HTTP_URL`, `ZFLASH_BOARD`.
+## SSH sessions (no repeated passwords)
 
-## Configuration
+`west remote connect` opens an OpenSSH `ControlMaster`; every later command
+and rsync reuses it via `ControlPath`. Authenticate once — password,
+passphrase, or agent all work because the real `ssh(1)` does the prompting.
+The session idles out after `server.persist_minutes` (default 30).
 
-Config is layered: built-in defaults → `~/.config/zflash/config.yaml` →
-nearest `zflash.yaml` walking up from the project directory → env vars → CLI.
+Set `server.require_session: true` (default) so commands fail with a clear
+"run connect first" instead of silently prompting. Set it `false` if your
+setup uses non-interactive keys only.
+
+## Remote builds
+
+Configure applications in `~/.config/zflash/config.yaml` or a project
+`zflash.yaml`:
 
 ```yaml
 server:
-  transport: ssh                 # ssh | http
-  host: build@build-server       # ~/.ssh/config aliases work
-  artifact_roots:                # remote dirs scanned for *.hex/*.bin/*.elf
-    - zephyrproject/ra8p1_dual_core_app
-  # http_url: http://build-server:8765
+  transport: ssh
+  host: build@build-server
+  publish_root: .zflash/published
+  persist_minutes: 30
+
+applications:
+  gpio_test:
+    workspace: zephyrproject              # remote west workspace root
+    source_dir: ra8p1_dual_core_app/board_bringup_tests/gpio_test
+    build_dir: build                      # relative to source_dir
+    board: zcore_ra8p1_r7ka8p1kflcac_cm85
+    extra_args: []
 
 flash:
   board: zcore_ra8p1_cm85
-  # jlink_dev_id: tunnel:123456  # remote J-Link probe (see below)
-  # pyocd_uid: remote:laptop-ip:5555
-
-console:
-  port: /dev/ttyACM0
-  baud: 115200
+  # probe: 123456          # J-Link serial / pyocd UID / blhost port override
 ```
 
-## Board profiles
-
-Profiles live in `src/zflash/boards_builtin.yaml` (ships with the package) and
-can be extended/overridden via `~/.config/zflash/boards.d/*.yaml` or a
-project-level `zflash.boards.yaml`:
-
-```yaml
-boards:
-  - name: my_board
-    runner: jlink                # jlink | pyocd | blhost
-    artifact: zephyr.hex
-    jlink_device: R7KA8P1KF_CPU0
-    bin_addr: "0x02000000"       # load addr for raw .bin
-    pyocd_target: R7KA8P1KF
-```
-
-`blhost` profiles take a `blhost_port` and a `blhost_cmds` template list where
-`{port}` and `{artifact}` are substituted — see the bundled `rw612_blhost`
-profile for a full erase/program sequence.
-
-## Remote probes (flash *from* the server instead)
-
-If you'd rather keep `west flash` on the server, you don't need `zflash` at
-all — both runners support remote probes:
+Then:
 
 ```bash
-# Laptop: JLinkRemoteServer -UseTunnel (or plain TCP on the LAN)
-# Server:
-west flash -r jlink --dev-id <laptop-ip>          # J-Link over LAN/VPN
-west flash -r jlink --dev-id tunnel:<serial>      # SEGGER tunnel, works over WAN/NAT
-
-# Laptop: pyocd server
-# Server:
-west flash -r pyocd --dev-id remote:<laptop-ip>:5555
+west remote build gpio_test --flash --monitor
 ```
 
-`zflash` also honors `flash.jlink_dev_id` / `flash.pyocd_uid` if you want one
-tool that can flash *through* a remote probe as well.
+Build output streams to your terminal; only a **successful** build is
+published and flashed — failures never flash stale output.
 
-## Optional: `west zflash`
+## Published bundles
 
-West discovers extension commands via a manifest project's `west-commands.yml`
-(the file must live inside that project). To register, drop a one-line shim at
-`zephyr/scripts/west_commands/zflash.py`:
+`publish` copies `zephyr.{hex,bin,elf,...}` from a build dir into
+`<publish_root>/<build_id>/` with a `bundle.json` manifest (SHA-256 per
+file, board, commit, success flag). Clients download to staging, verify
+hashes, and only then promote to `~/.cache/zflash/bundles/` — corrupted or
+truncated transfers can never reach the flasher.
 
-```python
-from zflash.west_command import ZflashCommand  # noqa: F401
-```
+The HTTP service (`west remote serve <publish_root>`) binds **loopback by
+default**; reach it from the laptop via SSH forwarding or run it only on
+the VPN. It serves declared bundle files only — no arbitrary workspace
+paths.
 
-and append to `zephyr/scripts/west-commands.yml`:
+## Board profiles & runners
 
-```yaml
-  - file: scripts/west_commands/zflash.py
-    commands:
-      - name: zflash
-        class: ZflashCommand
-        help: fetch binaries from a build server and flash a local devkit
-```
+Built-in profiles: `zcore_ra8p1_cm85`, `zcore_ra8p1_cm33`, `ek_ra8p1_cm85`,
+`rw612_blhost`, plus generic jlink/pyocd. Extend via
+`~/.config/zflash/boards.d/*.yaml` or `./zflash.boards.yaml`.
+
+Runners: **jlink** (serial/IP/tunnel auto-detected), **pyocd** (incl.
+`remote:<host>:<port>` probe servers), **blhost** (structured args, erase
+confirmation required).
+
+## Platform support
+
+Linux first: SSH multiplexing, serial monitor, and probe tooling are
+validated on Linux. The pure-Python parts (bundles, publish, serve) are
+portable; Windows/macOS SSH-mux behavior is not yet covered by CI.
 
 ## License
 
