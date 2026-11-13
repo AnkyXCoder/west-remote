@@ -1,0 +1,65 @@
+# Copyright (c) 2025 eInfochips
+# SPDX-License-Identifier: Apache-2.0
+
+# Built-in board profiles. Users can override or extend these with YAML files in
+# ~/.config/zflash/boards.d/ or a project-level zflash.boards.yaml.
+#
+# Fields:
+#   runner:        jlink | pyocd | blhost
+#   artifact:      preferred artifact filename pulled/flashed (e.g. zephyr.hex)
+#   jlink_device:  -device argument for JLinkExe
+#   jlink_speed:   JTAG/SWD speed in kHz (default: 4000)
+#   jlink_if:      interface (default: SWD)
+#   bin_addr:      load address used when flashing a raw .bin with jlink
+#   pyocd_target:  -t argument for pyocd
+#   blhost_cmds:   command template list for NXP blhost; {port} and {artifact}
+#                  are substituted
+
+boards:
+  - name: zcore_ra8p1_cm85
+    description: eInfochips ZCore RA8P1, Cortex-M85 (CPU0)
+    runner: jlink
+    artifact: zephyr.hex
+    jlink_device: R7KA8P1KF_CPU0
+    bin_addr: "0x02000000"
+    pyocd_target: R7KA8P1KF
+
+  - name: zcore_ra8p1_cm33
+    description: eInfochips ZCore RA8P1, Cortex-M33 (CPU1)
+    runner: jlink
+    artifact: zephyr.hex
+    jlink_device: R7KA8P1KF_CPU1
+    bin_addr: "0x22000000"
+    pyocd_target: R7KA8P1KF
+
+  - name: ek_ra8p1_cm85
+    description: Renesas EK-RA8P1, Cortex-M85 (CPU0)
+    runner: jlink
+    artifact: zephyr.hex
+    jlink_device: R7KA8P1KF_CPU0
+    bin_addr: "0x02000000"
+    pyocd_target: R7KA8P1KF
+
+  - name: rw612_blhost
+    description: NXP RW612 via blhost over UART bootloader
+    runner: blhost
+    artifact: zephyr.bin
+    blhost_port: /dev/ttyUSB0
+    blhost_cmds:
+      - "fill-memory 0x20001000 0x4 0xC0000006"
+      - "configure-memory 0x9 0x20001000"
+      - "-t 60000 -- get-property 0x19 0x9"
+      - "-t 60000 flash-erase-region 0x08020000 0x7E0000"
+      - "-t 60000 write-memory 0x08020000 {artifact}"
+
+  - name: generic_jlink
+    description: Generic J-Link target (set jlink_device in your board file)
+    runner: jlink
+    artifact: zephyr.hex
+    jlink_device: Cortex-M85
+
+  - name: generic_pyocd
+    description: Generic pyOCD target
+    runner: pyocd
+    artifact: zephyr.hex
+    pyocd_target: cortex_m

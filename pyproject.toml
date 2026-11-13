@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zephyr-remote-flash"
+version = "0.1.0"
+description = "Fetch Zephyr binaries from a remote build server and flash a locally attached devkit"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "eInfochips", email = "ankit@example.com"}
+]
+keywords = ["zephyr", "flashing", "jlink", "pyocd", "remote", "embedded"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Embedded Systems",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "PyYAML>=5.4",
+]
+
+[project.optional-dependencies]
+uart = ["pyserial>=3.5"]
+dev = [
+    "pytest>=7.0",
+    "black>=22.0",
+    "pre-commit>=2.20",
+]
+
+[project.scripts]
+zflash = "zflash.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+zflash = ["boards_builtin.yaml"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
